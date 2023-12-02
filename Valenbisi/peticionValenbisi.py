@@ -2,7 +2,7 @@ import requests
 from requests.models import Response
 
 
-URL: str = "https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?limit=20"
+URL: str = "https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?"
 
 print(f'Escribe dirección de la estación')
 address = input('')
