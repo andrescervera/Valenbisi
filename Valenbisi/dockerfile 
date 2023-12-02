@@ -1,0 +1,14 @@
+# Usa la imagen base de Python
+FROM python:3.11.5
+
+# Establece el directorio de trabajo en /app
+WORKDIR /app
+
+# Copia el archivo de la aplicación actual al contenedor en /app
+COPY peticionValenbisi.py /app/peticionValenbisi.py
+
+# Instala las dependencias de la aplicación
+RUN pip install flask
+
+# Define el comando por defecto para ejecutar la aplicación
+CMD ["python", "peticionValenbisi.py"]
