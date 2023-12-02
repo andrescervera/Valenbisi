@@ -1,6 +1,18 @@
 import requests
+from pymongo import MongoClient
 
-URL = "https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?limit=100"
+username = "admin"
+password = "admin01"
+database_name = "estaciones_valenbisi"
+collection_name = "estaciones"
+
+client = MongoClient("mongodb://admin:admin01@localhost:27017/?authSource=admin")
+
+db = client['estaciones_valenbisi']  # Reemplazar 'nombre_base_datos' por el nombre de tu base de datos
+collection = db['estaciones']  # Nombre de la colección donde se guardarán los datos
+#result = collection.delete_many({}) borrar base de datos
+
+URL = "https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?limit = 100"
 
 respuesta = requests.get(url=URL)
 estado = respuesta.status_code
@@ -19,10 +31,22 @@ if estado == 200:
         
         print(f'Estación: {id_estacion}, Dirección: {direccion}, Bicis Disponibles: {bicis_disponibles}, Huecos Libres: {huecos_libres}, Fecha: {fecha}')
         
-        # Aquí puedes realizar la ingesta de datos para cada estación
-        # Por ejemplo, almacenar los datos en una base de datos
+        # Insertar datos en la colección 'estaciones'
+        data = {
+            "id_estacion": id_estacion,
+            "direccion": direccion,
+            "bicis_disponibles": bicis_disponibles,
+            "huecos_libres": huecos_libres,
+            "fecha": fecha
+        }
         
-        # Código para realizar la ingesta (ejemplo)
-        # insertar_datos(id_estacion, direccion, bicis_disponibles, huecos_libres, fecha)
+        # Utilizar update_one para insertar o actualizar
+        collection.update_one(
+            {"_id": id_estacion},
+            {"$set": data},
+            upsert=True
+        )
+
+    print("Datos insertados en la base de datos MongoDB.")
 else:
     print(f"Error: {estado}")
