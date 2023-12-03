@@ -10,4 +10,4 @@ COPY . /usr/src/app
 RUN pip install -r requirements.txt
 
 # Lanzamos el script con dependencia CMD al contenedor en ejecución
-CMD ["python", "ingestaMongo.py"]
+CMD ["python3", "ingestaMongo.py"]
