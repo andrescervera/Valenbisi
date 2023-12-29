@@ -10,7 +10,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin01
     volumes:
-      - ./init-mongo-script.js:/docker-entrypoint-initdb.d/init-mongo-script.js
+      - ./mongo:/docker-entrypoint-initdb.d/
 
   mongo-express:
     image: mongo-express
@@ -29,6 +29,28 @@ services:
     ports:
       - 8081:8081
 
+  my-jupyter:
+    build:
+      context: ./jupyter
+      dockerfile: Dockerfile
+    ports:
+      - 10000:8888
+    volumes:
+      - python-data:/data
+
+  my-python:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - python-data:/data
+    depends_on:
+      - mongodb
+
 volumes:
   mongodb_data:
+  python-data:
+    driver: local
 

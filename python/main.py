@@ -1,18 +1,34 @@
 import requests
 from pymongo import MongoClient
 import pandas as pd
+import time
 
 username = "admin"
 password = "admin01"
 database_name = "estaciones_valenbisi"
 collection_name = "estaciones"
 
-client = MongoClient("mongodb://admin:admin01@localhost:27017/?authSource=admin")
+# Esperar hasta que MongoDB esté listo
+max_retries = 30
+retry_interval = 2
 
-db = client['estaciones_valenbisi']  # Reemplazar 'nombre_base_datos' por el nombre de tu base de datos
-collection = db['estaciones']  # Nombre de la colección donde se guardarán los datos
+for _ in range(max_retries):
+    try:
+        client = MongoClient("mongodb://admin:admin01@localhost:27017/?authSource=admin")
+        client.server_info()  # Intentar obtener información del servidor para verificar la conexión
+        break
+    except Exception as e:
+        print(f"Error al conectar a MongoDB: {e}")
+        print(f"Reintentando en {retry_interval} segundos...")
+        time.sleep(retry_interval)
+else:
+    print("No se pudo conectar a MongoDB después de varios intentos. Saliendo.")
+    exit(1)
 
-result = collection.delete_many({}) #borrar base de datos
+db = client[database_name]
+collection = db[collection_name]
+
+result = collection.delete_many({})  # Borrar base de datos
 
 URL = "https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?limit=100"
 
@@ -23,9 +39,11 @@ datos = respuesta.json()
 if estado == 200:
     total_count = datos['total_count']
     print(f'Total de estaciones: {total_count}')
-    
+
     # Ordenar datos por id_estacion ascendente
     sorted_data = sorted(datos["results"], key=lambda x: x["number"])
+
+    data_list = []
 
     for estacion in sorted_data:
         id_estacion = estacion["number"]
@@ -33,9 +51,9 @@ if estado == 200:
         fecha = estacion["updated_at"]
         bicis_disponibles = estacion["available"]
         huecos_libres = estacion["free"]
-        
+
         print(f'Estación: {id_estacion}, Dirección: {direccion}, Bicis Disponibles: {bicis_disponibles}, Huecos Libres: {huecos_libres}, Fecha: {fecha}')
-        
+
         # Insertar datos en la colección 'estaciones'
         data = {
             "id_estacion": id_estacion,
@@ -44,7 +62,7 @@ if estado == 200:
             "huecos_libres": huecos_libres,
             "fecha": fecha
         }
-        
+
         # Utilizar update_one para insertar o actualizar
         collection.update_one(
             {"_id": id_estacion},
@@ -52,14 +70,16 @@ if estado == 200:
             upsert=True
         )
 
-    print("Datos insertados en la base de datos MongoDB.")
-    
-    #Recuperamos toda la info para el posterior estudio y generamos un dataframe
-    estudio = collection.find()
-    df = pd.DataFrame(list(estudio))
-    
-    #Lo guardamos en un archivo csv
-    df.to_csv('datos_estaciones.csv', index=False)
+        # Agregar datos a la lista para CSV
+        data_list.append(data)
+
+    # Crear un DataFrame de pandas desde la lista de diccionarios
+    df = pd.DataFrame(data_list)
+
+    # Guardar el DataFrame como un archivo CSV
+    df.to_csv('datos_estaciones_prueba.csv', index=False)
+
+    print("Datos insertados en la base de datos MongoDB y guardados en datos_estaciones_prueba.csv.")
 
 else:
     print(f"Error: {estado}")
