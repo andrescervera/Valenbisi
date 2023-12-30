@@ -2,6 +2,7 @@ import requests
 from pymongo import MongoClient
 import pandas as pd
 import time
+import socket
 
 username = "admin"
 password = "admin01"
@@ -10,21 +11,28 @@ collection_name = "estaciones"
 
 # Esperar hasta que MongoDB esté listo
 max_retries = 30
-retry_interval = 2
+retry_interval = 5  # Aumentado el intervalo a 5 segundos
+
+def is_mongo_available():
+    host = "mongodb"
+    port = 27017
+    try:
+        sock = socket.create_connection((host, port), timeout=1)
+        sock.close()
+        return True
+    except Exception as e:
+        return False
 
 for _ in range(max_retries):
-    try:
-        client = MongoClient("mongodb://admin:admin01@localhost:27017/?authSource=admin")
-        client.server_info()  # Intentar obtener información del servidor para verificar la conexión
+    if is_mongo_available():
         break
-    except Exception as e:
-        print(f"Error al conectar a MongoDB: {e}")
-        print(f"Reintentando en {retry_interval} segundos...")
-        time.sleep(retry_interval)
+    print(f"MongoDB no está disponible. Reintentando en {retry_interval} segundos...")
+    time.sleep(retry_interval)
 else:
     print("No se pudo conectar a MongoDB después de varios intentos. Saliendo.")
     exit(1)
 
+client = MongoClient("mongodb://admin:admin01@mongodb:27017/?authSource=admin")
 db = client[database_name]
 collection = db[collection_name]
 
@@ -69,17 +77,6 @@ if estado == 200:
             {"$set": data},
             upsert=True
         )
-
-        # Agregar datos a la lista para CSV
-        data_list.append(data)
-
-    # Crear un DataFrame de pandas desde la lista de diccionarios
-    df = pd.DataFrame(data_list)
-
-    # Guardar el DataFrame como un archivo CSV
-    df.to_csv('datos_estaciones_prueba.csv', index=False)
-
-    print("Datos insertados en la base de datos MongoDB y guardados en datos_estaciones_prueba.csv.")
 
 else:
     print(f"Error: {estado}")
